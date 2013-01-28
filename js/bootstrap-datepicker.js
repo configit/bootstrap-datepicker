@@ -76,7 +76,12 @@
 		$(document).on('mousedown', function (e) {
 			// Clicked outside the datepicker, hide it
 			if ($(e.target).closest('.datepicker.datepicker-inline, .datepicker.datepicker-dropdown').length === 0) {
-				that.hide();
+				// only hide if clicked out side of element or component
+				if ( e.target !== that.element.find( 'input' )[0] &&
+						e.target !== that.component[0] &&
+						e.target.parentElement !== that.component[0] ) {
+					that.hide();
+				}
 			}
 		});
 
@@ -140,6 +145,9 @@
 	};
 
 	Datepicker.prototype = {
+		// track if element was just focused to prevent hiding picker on "focus->click" events
+		justFocused : false,
+
 		constructor: Datepicker,
 
 		_events: [],
@@ -150,7 +158,8 @@
 					[this.element, {
 						focus: $.proxy(this.show, this),
 						keyup: $.proxy(this.update, this),
-						keydown: $.proxy(this.keydown, this)
+						keydown: $.proxy(this.keydown, this),
+						click: $.proxy(this.toggleVis, this)
 					}]
 				];
 			}
@@ -160,22 +169,16 @@
 					[this.element.find('input'), {
 						focus: $.proxy(this.show, this),
 						keyup: $.proxy(this.update, this),
-						keydown: $.proxy(this.keydown, this)
+						keydown: $.proxy(this.keydown, this),
+						click: $.proxy(this.toggleVis, this)
 					}],
 					[this.component, {
-						click: $.proxy(this.show, this)
+						click: $.proxy(this.toggleVis, this)
 					}]
 				];
 			}
 			else if (this.element.is('div')) {  // inline datepicker
 				this.isInline = true;
-			}
-			else {
-				this._events = [
-					[this.element, {
-						click: $.proxy(this.show, this)
-					}]
-				];
 			}
 			for (var i=0, el, ev; i<this._events.length; i++){
 				el = this._events[i][0];
@@ -192,7 +195,23 @@
 			this._events = [];
 		},
 
+		toggleVis: function ( e ) {
+			console.log( e );
+			if ( this.justFocused ) {
+				return;
+			}
+
+			this[ this.picker.is( ':visible' ) ? 'hide' : 'show' ](e);
+		},
+
 		show: function(e) {
+			var that = this;
+			if ( e.type === 'focus' ) {
+				// element is justFocused in 200 millis
+				this.justFocused = true;
+				setTimeout( function () { that.justFocused = false; }, 200 );
+			}
+			this.lastShowEvent = e;
 			this.picker.show();
 			this.height = this.component ? this.component.outerHeight() : this.element.outerHeight();
 			this.update();

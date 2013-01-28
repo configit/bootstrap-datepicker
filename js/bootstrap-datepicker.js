@@ -126,6 +126,7 @@
 							return parseInt(val) + 1;
 						});
 
+		this.getDateCssClass = options.getDateCssClass;
 		this.weekStart = ((options.weekStart||this.element.data('date-weekstart')||dates[this.language].weekStart||0) % 7);
 		this.weekEnd = ((this.weekStart + 6) % 7);
 		this.startDate = -Infinity;
@@ -196,7 +197,6 @@
 		},
 
 		toggleVis: function ( e ) {
-			console.log( e );
 			if ( this.justFocused ) {
 				return;
 			}
@@ -442,6 +442,8 @@
 					$.inArray(prevMonth.getUTCDay(), this.daysOfWeekDisabled) !== -1) {
 					clsName += ' disabled';
 				}
+				clsName += typeof this.getDateCssClass === 'function' ? ' ' + this.getDateCssClass( prevMonth.getTime() ) : '';
+
 				html.push('<td class="day'+clsName+'">'+prevMonth.getUTCDate() + '</td>');
 				if (prevMonth.getUTCDay() == this.weekEnd) {
 					html.push('</tr>');
@@ -747,10 +749,13 @@
 					break;
 			}
 			if (dateChanged){
-				this.element.trigger({
-					type: 'changeDate',
-					date: this.date
-				});
+				// don't trigger the changeDate event when just navigating ( left, up, right. down) the calendar
+				if ( e.keyCode != 37 && e.keyCode != 38 && e.keyCode != 39 && e.keyCode != 40 ) {
+					this.element.trigger({
+						type: 'changeDate',
+						date: this.date
+					});
+				}
 				var element;
 				if (this.isInput) {
 					element = this.element;
